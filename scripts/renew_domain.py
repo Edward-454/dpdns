@@ -15,6 +15,8 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+
+
 API_BASE = os.getenv("DIGITALPLAT_API_BASE", "https://domain-api.digitalplat.org/api/v1").rstrip("/")
 DEFAULT_THRESHOLD = 120
 DATE_FORMAT = "%Y-%m-%d"
