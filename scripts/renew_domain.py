@@ -9,6 +9,7 @@ scheduled GitHub Actions workflow.
 import json
 import os
 import sys
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -25,13 +26,16 @@ DEFAULT_UA = (
 )
 
 
-def _request(path, method="GET", payload=None, token=None):
+def _request(path, method="GET", payload=None, token=None, idempotency_key=None):
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/json",
         "Content-Type": "application/json",
         "User-Agent": os.getenv("DIGITALPLAT_USER_AGENT", DEFAULT_UA),
     }
+
+    if idempotency_key:
+        headers["Idempotency-Key"] = idempotency_key
     body = None if payload is None else json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(f"{API_BASE}{path}", data=body, headers=headers, method=method)
     try:
@@ -95,13 +99,28 @@ def list_domains(token):
     return _extract_domains(_unwrap(_request("/domains", token=token)))
 
 
-def renew_domain(domain, token, renewal_type, years):
+def renew_domain(domain, token, renewal_type, years, expiry):
     encoded = urllib.parse.quote(domain, safe="")
     payload = {"renewal_type": renewal_type, "years": years}
-    data = _unwrap(_request(f"/domains/{encoded}/renew", method="POST", payload=payload, token=token))
+
+    key_material = (
+        f"{API_BASE}/domains/{domain}/renew|"
+        f"{expiry.strftime(DATE_FORMAT)}|{renewal_type}|{years}"
+    )
+    idempotency_key = str(uuid.uuid5(uuid.NAMESPACE_URL, key_material))
+
+    data = _unwrap(
+        _request(
+            f"/domains/{encoded}/renew",
+            method="POST",
+            payload=payload,
+            token=token,
+            idempotency_key=idempotency_key,
+        )
+    )
+
     records = _extract_domains(data)
     return records[0] if records else {"domain": domain}
-
 
 def _is_free_domain(raw):
     # A domain is considered free-renewable when its slot type is "free" (or
@@ -189,7 +208,7 @@ def main():
             continue
 
         try:
-            updated = renew_domain(domain, token, renewal_type, years)
+            updated = renew_domain(domain, token, renewal_type, years, expiry)
             new_expiry = _parse_date(_pick(updated, ("expiry_date", "expires_at")))
             print(f"[RENEWED] {domain} new_expires={new_expiry.strftime(DATE_FORMAT)}")
             changed = True
