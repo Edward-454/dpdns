@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 
 API_BASE = os.getenv("DIGITALPLAT_API_BASE", "https://domain-api.digitalplat.org/api/v1").rstrip("/")
-DEFAULT_THRESHOLD = 120
+DEFAULT_THRESHOLD = 80
 DATE_FORMAT = "%Y-%m-%d"
 # Cloudflare's bot detection blocks custom binary-looking User-Agents, so default
 # to a realistic browser agent to keep the scheduled automation from being challenged.
