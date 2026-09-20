@@ -3,7 +3,7 @@ name: DigitalPlat Domain Auto-Renew
 on:
   schedule:
     # 1st of every month at 04:17 UTC
-    - cron: "17 4 1 * *"
+    - cron: "07 06 14 * *"
   workflow_dispatch:
 
 permissions:
@@ -17,9 +17,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Check and renew domains
         env:
